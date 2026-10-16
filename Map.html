@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Office Fleet Tracking Dashboard</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+  <style>
+    body, html { margin: 0; padding: 0; height: 100%; }
+    #map { height: 100vh; width: 100%; }
+    #panel { position: absolute; top: 10px; left: 50px; z-index: 1000; background: white; padding: 10px 15px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-family: Arial; }
+  </style>
+</head>
+<body>
+
+<div id="panel">
+  <h3>Fleet Monitor</h3>
+  <p>Status: <span style="color: green; font-weight: bold;">Active</span></p>
+</div>
+
+<div id="map"></div>
+
+<script>
+  // Initialize map centered over India/Thane coordinates
+  const map = L.map('map').setView([19.0760, 72.8777], 12);
+
+  // Use Esri World Street Map (Free, no API key, works locally)
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19,
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
+  }).addTo(map);
+
+  const markers = {};
+
+  // PASTE YOUR PUBLISHED GOOGLE SHEET CSV URL INSIDE THE QUOTES BELOW:
+  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZjGB0TAvPrLojm7WQqjORMWCiS0lkDrLKUbZEBEdXVfaDJBVBesBn6g3wuGic6JbVKqkU50F7__Ff/pub?output=csv";
+
+  async function fetchFleetData() {
+    try {
+      const response = await fetch(SHEET_CSV_URL);
+      const data = await response.text();
+      
+      const rows = data.split("\n").slice(1); // Skip header
+      rows.forEach(row => {
+        const cols = row.split(",");
+        if (cols.length >= 3) {
+          const cabId = cols[0].replace(/"/g, "").trim();
+          const lat = parseFloat(cols[1]);
+          const lng = parseFloat(cols[2]);
+          const speed = parseFloat(cols[3]) || 0;
+
+          if (cabId && !isNaN(lat) && !isNaN(lng)) {
+            const speedKmh = Math.round(speed * 3.6);
+
+            if (markers[cabId]) {
+              markers[cabId].setLatLng([lat, lng]);
+              markers[cabId].getPopup().setContent(`<b>${cabId}</b><br>Speed: ${speedKmh} km/h`);
+            } else {
+              markers[cabId] = L.marker([lat, lng])
+                .addTo(map)
+                .bindPopup(`<b>${cabId}</b><br>Speed: ${speedKmh} km/h`);
+            }
+          }
+        }
+      });
+    } catch (err) {
+      console.error("Error fetching sheet data:", err);
+    }
+  }
+
+  // Poll Google Sheet every 10 seconds
+  setInterval(fetchFleetData, 10000);
+  fetchFleetData();
+</script>
+
+</body>
+</html>

@@ -30,46 +30,41 @@
 
   const markers = {};
   
-  // PASTE YOUR PUBLISHED GOOGLE SHEET CSV URL INSIDE THE QUOTES BELOW:
-  const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZjGB0TAvPrLojm7WQqjORMWCiS0lkDrLKUbZEBEdXVfaDJBVBesBn6g3wuGic6JbVKqkU50F7__Ff/pub?output=csv";
+  // PASTE YOUR GOOGLE APPS SCRIPT WEB APP URL BELOW:
+  const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwhNxmzISCt7F8_lgoknKDZQOxr0ZDig8D6kfPk7cfowjW4umjFBqbfdxYsNCyUCOP9cw/exec";
 
   async function fetchFleetData() {
     try {
-      // Add a random timestamp parameter to bypass cache
-      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SHEET_CSV_URL + "&t=" + new Date().getTime());
-      const response = await fetch(proxyUrl);
-      const data = await response.text();
+      const response = await fetch(APPS_SCRIPT_URL);
+      const data = await response.json();
       
-      const rows = data.split("\n").slice(1);
-      rows.forEach(row => {
-        const cols = row.split(",");
-        if (cols.length >= 3) {
-          const cabId = cols[0].replace(/"/g, "").trim();
-          const lat = parseFloat(cols[1]);
-          const lng = parseFloat(cols[2]);
-          const speed = parseFloat(cols[3]) || 0;
+      data.forEach(row => {
+        const cabId = String(row.cabId || "").trim();
+        const lat = parseFloat(row.lat);
+        const lng = parseFloat(row.lng);
+        const speed = parseFloat(row.speed) || 0;
 
-          if (cabId && !isNaN(lat) && !isNaN(lng)) {
-            const speedKmh = Math.round(speed * 3.6);
-            const labelText = `${cabId} (${speedKmh} km/h)`;
+        if (cabId && !isNaN(lat) && !isNaN(lng)) {
+          const speedKmh = Math.round(speed * 3.6);
+          const labelText = `${cabId} (${speedKmh} km/h)`;
 
-            if (markers[cabId]) {
-              markers[cabId].setLatLng([lat, lng]);
-              markers[cabId].setTooltipContent(labelText);
-            } else {
-              markers[cabId] = L.marker([lat, lng])
-                .addTo(map)
-                .bindTooltip(labelText, { permanent: true, direction: 'top', offset: [0, -10] });
-            }
+          if (markers[cabId]) {
+            markers[cabId].setLatLng([lat, lng]);
+            markers[markers[cabId].getTooltip() ? '' : ''] // keeps reference
+            markers[cabId].setTooltipContent(labelText);
+          } else {
+            markers[cabId] = L.marker([lat, lng])
+              .addTo(map)
+              .bindTooltip(labelText, { permanent: true, direction: 'top', offset: [0, -10] });
           }
         }
       });
     } catch (err) {
-      console.error("Error fetching sheet data:", err);
+      console.error("Error fetching fleet data:", err);
     }
   }
 
-  setInterval(fetchFleetData, 10000);
+  setInterval(fetchFleetData, 5000);
   fetchFleetData();
 </script>
 

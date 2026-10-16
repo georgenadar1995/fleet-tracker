@@ -20,23 +20,23 @@
 <div id="map"></div>
 
 <script>
-  // Initialize map centered over India/Thane coordinates
   const map = L.map('map').setView([19.0760, 72.8777], 12);
 
-  // Use Esri World Street Map (Free, no API key, works locally)
   L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
     maxZoom: 19,
     attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
   }).addTo(map);
 
   const markers = {};
-
+  
   // PASTE YOUR PUBLISHED GOOGLE SHEET CSV URL INSIDE THE QUOTES BELOW:
   const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRZjGB0TAvPrLojm7WQqjORMWCiS0lkDrLKUbZEBEdXVfaDJBVBesBn6g3wuGic6JbVKqkU50F7__Ff/pub?output=csv";
 
   async function fetchFleetData() {
     try {
-      const response = await fetch(SHEET_CSV_URL);
+      // Use a public CORS proxy to bypass browser restrictions
+      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SHEET_CSV_URL);
+      const response = await fetch(proxyUrl);
       const data = await response.text();
       
       const rows = data.split("\n").slice(1); // Skip header

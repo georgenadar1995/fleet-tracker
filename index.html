@@ -8,6 +8,7 @@
     body, html { margin: 0; padding: 0; height: 100%; }
     #map { height: 100vh; width: 100%; }
     #panel { position: absolute; top: 10px; left: 50px; z-index: 1000; background: white; padding: 10px 15px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); font-family: Arial; }
+    .leaflet-tooltip { background: white; border: 1px solid #ccc; font-weight: bold; padding: 2px 5px; border-radius: 4px; }
   </style>
 </head>
 <body>
@@ -34,12 +35,12 @@
 
   async function fetchFleetData() {
     try {
-      // Use a public CORS proxy to bypass browser restrictions
-      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SHEET_CSV_URL);
+      // Add a random timestamp parameter to bypass cache
+      const proxyUrl = "https://api.allorigins.win/raw?url=" + encodeURIComponent(SHEET_CSV_URL + "&t=" + new Date().getTime());
       const response = await fetch(proxyUrl);
       const data = await response.text();
       
-      const rows = data.split("\n").slice(1); // Skip header
+      const rows = data.split("\n").slice(1);
       rows.forEach(row => {
         const cols = row.split(",");
         if (cols.length >= 3) {
@@ -50,14 +51,15 @@
 
           if (cabId && !isNaN(lat) && !isNaN(lng)) {
             const speedKmh = Math.round(speed * 3.6);
+            const labelText = `${cabId} (${speedKmh} km/h)`;
 
             if (markers[cabId]) {
               markers[cabId].setLatLng([lat, lng]);
-              markers[cabId].getPopup().setContent(`<b>${cabId}</b><br>Speed: ${speedKmh} km/h`);
+              markers[cabId].setTooltipContent(labelText);
             } else {
               markers[cabId] = L.marker([lat, lng])
                 .addTo(map)
-                .bindPopup(`<b>${cabId}</b><br>Speed: ${speedKmh} km/h`);
+                .bindTooltip(labelText, { permanent: true, direction: 'top', offset: [0, -10] });
             }
           }
         }
@@ -67,7 +69,6 @@
     }
   }
 
-  // Poll Google Sheet every 10 seconds
   setInterval(fetchFleetData, 10000);
   fetchFleetData();
 </script>
